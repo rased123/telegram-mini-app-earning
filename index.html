@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monetag Earn App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); padding: 20px; text-align: center; }
+        .balance-box { padding: 15px; border: 1px solid var(--tg-theme-hint-color); border-radius: 8px; margin-bottom: 20px; }
+        .btn { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>💰 আপনার ব্যালেন্স</h2>
+    <div class="balance-box">
+        <p id="balance">লোড হচ্ছে...</p>
+    </div>
+
+    <div id="monetag-ad-container" style="min-height: 100px; background: #333; color: white; padding: 10px;">
+        Monetag Ad Code এখানে বসবে।
+    </div>
+
+    <button class="btn" onclick="simulateAdView()">📺 অ্যাড দেখা সম্পূর্ণ</button>
+    <button class="btn" onclick="openWithdrawal()">💸 উইথড্র করুন</button>
+    
+    <p id="message"></p>
+
+    <script>
+        const API_BASE_URL = window.location.origin + '/api'; 
+        let userBalance = 0;
+
+        window.onload = function() {
+            if (window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+                loadBalance();
+            } else {
+                document.getElementById('message').innerText = 'অ্যাপটি Telegram এ চালু করুন।';
+            }
+        };
+
+        async function loadBalance() {
+            if (!window.Telegram.WebApp || !window.Telegram.WebApp.initDataUnsafe.user) return;
+            const tgId = window.Telegram.WebApp.initDataUnsafe.user.id;
+            const initData = window.Telegram.WebApp.initData;
+            try {
+                const response = await fetch(`${API_BASE_URL}/balance?tgId=${tgId}&initData=${initData}`);
+                const data = await response.json();
+                if (response.ok) {
+                    userBalance = data.balance;
+                    document.getElementById('balance').innerText = `${userBalance.toFixed(2)} BDT`;
+                } else {
+                    document.getElementById('balance').innerText = `ত্রুটি: ${data.message}`;
+                }
+            } catch (error) {
+                document.getElementById('balance').innerText = 'সার্ভার সংযোগে ত্রুটি।';
+            }
+        }
+
+        async function simulateAdView() {
+            document.getElementById('message').innerText = 'আয় রেকর্ড হচ্ছে...';
+            if (!window.Telegram.WebApp || !window.Telegram.WebApp.initDataUnsafe.user) {
+                 document.getElementById('message').innerText = 'Telegram তথ্য পাওয়া যায়নি।'; return;
+            }
+            const initData = window.Telegram.WebApp.initData;
+            const amount = 0.05; 
+            try {
+                const response = await fetch(`${API_BASE_URL}/record-earning`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initData, amount })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('message').innerText = `✅ সফল! ${amount} BDT যোগ হয়েছে।`;
+                    loadBalance();
+                } else {
+                    document.getElementById('message').innerText = `❌ ত্রুটি: ${data.message}`;
+                }
+            } catch (error) {
+                document.getElementById('message').innerText = 'সার্ভার ত্রুটি।';
+            }
+        }
+
+        function openWithdrawal() {
+            const amountStr = prompt(`বর্তমান ব্যালেন্স: ${userBalance.toFixed(2)} BDT। কত টাকা উইথড্র করবেন?`);
+            const amount = parseFloat(amountStr);
+            if (amount && amount > 0) {
+                 const details = prompt('উইথড্র করার জন্য আপনার পেমেন্ট ডিটেইলস (যেমন: বিকাশ নম্বর) দিন:');
+                 if (details) {
+                     submitWithdrawal(amount, details);
+                 }
+            }
+        }
+        
+        async function submitWithdrawal(amount, details) {
+             document.getElementById('message').innerText = 'উইথড্র রিকোয়েস্ট পাঠানো হচ্ছে...';
+             if (!window.Telegram.WebApp || !window.Telegram.WebApp.initDataUnsafe.user) return;
+             const initData = window.Telegram.WebApp.initData;
+             try {
+                const response = await fetch(`${API_BASE_URL}/submit-withdrawal`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initData, amount, details })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('message').innerText = `✅ উইথড্র রিকোয়েস্ট সফলভাবে পাঠানো হয়েছে। অ্যাডমিন শীঘ্রই প্রক্রিয়া করবে।`;
+                    loadBalance(); 
+                } else {
+                    document.getElementById('message').innerText = `❌ উইথড্র ত্রুটি: ${data.message}`;
+                }
+            } catch (error) {
+                document.getElementById('message').innerText = 'সার্ভার ত্রুটি।';
+            }
+        }
+    </script>
+</body>
+</html>
