@@ -1,0 +1,15 @@
+{
+  "name": "telegram-mini-app-earn-system",
+  "version": "1.0.0",
+  "description": "Telegram Mini App with an earning and withdrawal backend using Serverless Functions.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-telegram-webapps": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  }
+}
